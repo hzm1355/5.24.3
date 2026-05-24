@@ -1,0 +1,52 @@
+# ROS2 Control Configuration for Inspection Robot
+
+controller_manager:
+  ros__parameters:
+    update_rate: 50
+
+    # Joint State Broadcaster
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    # Diff Drive Controller
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+      # Wheel joints
+      left_wheel: left_wheel_joint
+      right_wheel: right_wheel_joint
+
+      # Kinematics
+      wheel_separation: 0.55
+      wheel_radius: 0.1
+
+      # Odometry
+      odom_frame_id: odom
+      base_frame_id: base_link
+      publish_tf: true
+      publish_odom: true
+
+      # Velocity command
+      cmd_vel_timeout: 0.5
+      linear:
+        x:
+          has_velocity_limits: true
+          max_velocity: 1.0
+          min_velocity: -1.0
+          has_acceleration_limits: true
+          max_acceleration: 3.0
+          min_acceleration: -3.0
+      angular:
+        z:
+          has_velocity_limits: true
+          max_velocity: 3.0
+          min_velocity: -3.0
+          has_acceleration_limits: true
+          max_acceleration: 5.0
+          min_acceleration: -5.0
+
+# Launch the controller
+diff_drive_controller:
+  ros__parameters:
+    left_wheel: left_wheel_joint
+    right_wheel: right_wheel_joint

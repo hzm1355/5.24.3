@@ -1,0 +1,227 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"
+        xmlns:gazebo="http://gazebosim.org">
+
+  <!-- 常量 -->
+  <xacro:property name="pi" value="3.1415926535897931"/>
+
+  <!-- ==================== 激光雷达 (RPLIDAR A2) ==================== -->
+  <xacro:macro name="rplidar_a2" params="prefix parent_link xyz rpy">
+
+    <link name="${prefix}lidar_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.04" length="0.05"/>
+        </geometry>
+        <material name="grey">
+          <color rgba="0.5 0.5 0.5 1"/>
+        </material>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.04" length="0.05"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.2"/>
+        <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}lidar_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}lidar_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <!-- Gazebo激光雷达插件 -->
+    <gazebo reference="${prefix}lidar_link">
+      <sensor type="ray" name="${prefix}lidar_sensor">
+        <pose>0 0 0 0 0 0</pose>
+        <visualize>true</visualize>
+        <update_rate>10</update_rate>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>1440</samples>
+              <resolution>1</resolution>
+              <min_angle>${-pi}</min_angle>
+              <max_angle>${pi}</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.15</min>
+            <max>12.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </ray>
+        <plugin name="${prefix}lidar_plugin" filename="libgazebo_ros_ray_sensor.so">
+          <ros>
+            <namespace>/robot</namespace>
+            <remapping>~/out:=/scan</remapping>
+          </ros>
+          <frame_name>${prefix}lidar_link</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- ==================== 深度相机 (RealSense D435i) ==================== -->
+  <xacro:macro name="realsense_d435i" params="prefix parent_link xyz rpy">
+
+    <link name="${prefix}camera_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.09 0.025 0.025"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0.1 0.1 0.1 1"/>
+        </material>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.09 0.025 0.025"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.1"/>
+        <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}camera_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}camera_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <!-- RGB相机插件 -->
+    <gazebo reference="${prefix}camera_link">
+      <sensor type="camera" name="${prefix}rgb_camera">
+        <update_rate>30</update_rate>
+        <camera>
+          <horizontal_fov>${60*pi/180}</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+        </camera>
+        <plugin name="${prefix}rgb_camera_plugin" filename="libgazebo_ros_camera.so">
+          <ros>
+            <namespace>/robot</namespace>
+          </ros>
+          <camera_name>camera</camera_name>
+          <image_topic_name>rgb/image_raw</image_topic_name>
+          <camera_info_topic_name>rgb/camera_info</camera_info_topic_name>
+          <frame_name>${prefix}camera_link</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+    <!-- 深度相机插件 -->
+    <gazebo reference="${prefix}camera_link">
+      <sensor type="depth" name="${prefix}depth_camera">
+        <update_rate>30</update_rate>
+        <camera>
+          <horizontal_fov>${60*pi/180}</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.3</near>
+            <far>5.0</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.02</stddev>
+          </noise>
+        </camera>
+        <plugin name="${prefix}depth_plugin" filename="libgazebo_ros_depth_camera.so">
+          <ros>
+            <namespace>/robot</namespace>
+          </ros>
+          <camera_name>camera</camera_name>
+          <depth_image_topic_name>depth/image_raw</depth_image_topic_name>
+          <depth_camera_info_topic_name>depth/camera_info</depth_camera_info_topic_name>
+          <point_cloud_topic_name>depth/points</point_cloud_topic_name>
+          <frame_name>${prefix}camera_link</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- ==================== IMU (BMI055) ==================== -->
+  <xacro:macro name="bmi055_imu" params="prefix parent_link xyz rpy">
+
+    <link name="${prefix}imu_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.02 0.02 0.01"/>
+        </geometry>
+        <material name="green">
+          <color rgba="0.2 0.8 0.2 1"/>
+        </material>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.02 0.02 0.01"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.01"/>
+        <inertia ixx="0.00001" iyy="0.00001" izz="0.00001" ixy="0" ixz="0" iyz="0"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}imu_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}imu_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <!-- Gazebo IMU插件 -->
+    <gazebo reference="${prefix}imu_link">
+      <gravity>true</gravity>
+      <sensor name="${prefix}imu_sensor" type="imu">
+        <always_on>true</always_on>
+        <update_rate>200</update_rate>
+        <visualize>true</visualize>
+        <plugin name="${prefix}imu_plugin" filename="libgazebo_ros_imu_sensor.so">
+          <ros>
+            <namespace>/robot</namespace>
+            <remapping>~/out:=imu/data</remapping>
+          </ros>
+          <body_name>${prefix}imu_link</body_name>
+          <update_rate_hz>200</update_rate_hz>
+          <gaussian_noise>0.02</gaussian_noise>
+          <xyz_offset>0 0 0</xyz_offset>
+          <rpy_offset>0 0 0</rpy_offset>
+          <frame_name>${prefix}imu_link</frame_name>
+        </plugin>
+        <pose>0 0 0 0 0 0</pose>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+</robot>

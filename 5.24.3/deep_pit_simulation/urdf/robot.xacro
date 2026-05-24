@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<robot name="inspection_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- 包含宏定义 -->
+  <xacro:include filename="$(find deep_pit_simulation)/urdf/robot_base.xacro"/>
+  <xacro:include filename="$(find deep_pit_simulation)/urdf/sensors.xacro"/>
+  <xacro:include filename="$(find deep_pit_simulation)/urdf/materials.xacro"/>
+
+  <!-- 创建底盘 -->
+  <xacro:robot_base prefix=""/>
+
+  <!-- 添加激光雷达 (顶部中央，高0.35m) -->
+  <xacro:rplidar_a2 
+    prefix="" 
+    parent_link="base_link" 
+    xyz="0 0 0.35" 
+    rpy="0 0 0"/>
+
+  <!-- 添加深度相机 (前部，前倾15°，高0.25m) -->
+  <xacro:realsense_d435i 
+    prefix="" 
+    parent_link="base_link" 
+    xyz="0.3 0 0.25" 
+    rpy="0 ${15*pi/180} 0"/>
+
+  <!-- 添加IMU (底盘中心，高0.15m) -->
+  <xacro:bmi055_imu 
+    prefix="" 
+    parent_link="base_link" 
+    xyz="0 0 0.15" 
+    rpy="0 0 0"/>
+
+  <!-- Gazebo全局属性 -->
+  <gazebo>
+    <static>false</static>
+  </gazebo>
+
+</robot>

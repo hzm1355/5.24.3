@@ -1,0 +1,56 @@
+# Robot Controller Configuration for deep_pit_simulation
+
+# Joint State Controller
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50
+
+# Left Wheel Velocity Controller
+left_wheel_controller:
+  type: velocity_controllers/JointVelocityController
+  joint: left_wheel_joint
+  pid:
+    p: 100.0
+    i: 0.01
+    d: 10.0
+
+# Right Wheel Velocity Controller
+right_wheel_controller:
+  type: velocity_controllers/JointVelocityController
+  joint: right_wheel_joint
+  pid:
+    p: 100.0
+    i: 0.01
+    d: 10.0
+
+# Diff Drive Controller (for ROS2 control)
+diff_drive_base_controller:
+  type: diff_drive_controller/DiffDriveController
+  left_wheel: left_wheel_joint
+  right_wheel: right_wheel_joint
+  wheel_separation: 0.55
+  wheel_radius: 0.2
+  publish_wheel_mechanisms: true
+  publish_odom: true
+  odom_frame: odom
+  base_link_frame: base_link
+  linear:
+    x:
+      has_velocity_limits: true
+      max_velocity: 1.0
+      min_velocity: -1.0
+      has_acceleration_limits: true
+      max_acceleration: 3.0
+  angular:
+    z:
+      has_velocity_limits: true
+      max_velocity: 3.0
+      min_velocity: -3.0
+      has_acceleration_limits: true
+      max_acceleration: 5.0
+
+# Twist Stamped to Odometry
+twist_to_odom:
+  type: twist_stamped_to_odometry/TwistStampedToOdometry
+  odom_frame: odom
+  base_link_frame: base_link

@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"
+        xmlns:gazebo="http://gazebosim.org"
+        name="inspection_robot">
+
+  <!-- 包含传感器宏 -->
+  <xacro:include filename="$(find deep_pit_simulation)/urdf/sensors.xacro"/>
+
+  <!-- ==================== 常量定义 ==================== -->
+  <xacro:property name="pi" value="3.1415926535897931"/>
+
+  <!-- 底盘参数 -->
+  <xacro:property name="base_length" value="0.6"/>
+  <xacro:property name="base_width" value="0.5"/>
+  <xacro:property name="base_height" value="0.3"/>
+  <xacro:property name="base_mass" value="25.0"/>
+
+  <!-- 轮子参数 -->
+  <xacro:property name="wheel_radius" value="0.1"/>
+  <xacro:property name="wheel_width" value="0.05"/>
+  <xacro:property name="wheel_mass" value="1.0"/>
+  <xacro:property name="wheel_ygap" value="0.025"/>
+  <xacro:property name="wheel_xoff" value="0.2"/>
+  <xacro:property name="wheel_zoff" value="0.05"/>
+
+  <!-- ==================== 底盘 ==================== -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.2 0.4 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <mass value="${base_mass}"/>
+      <inertia ixx="${base_mass*(base_width**2 + base_height**2)/12}"
+               iyy="${base_mass*(base_length**2 + base_height**2)/12}"
+               izz="${base_mass*(base_length**2 + base_width**2)/12}"
+               ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== 左轮 ==================== -->
+  <link name="left_wheel">
+    <visual>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.1 0.1 0.1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <inertia ixx="${wheel_mass*(3*wheel_radius**2 + wheel_width**2)/12}"
+               iyy="${wheel_mass*(3*wheel_radius**2 + wheel_width**2)/12}"
+               izz="${wheel_mass*wheel_radius**2/2}"
+               ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel"/>
+    <origin xyz="${wheel_xoff} ${base_width/2 + wheel_ygap} ${-wheel_zoff}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- ==================== 右轮 ==================== -->
+  <link name="right_wheel">
+    <visual>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.1 0.1 0.1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <inertia ixx="${wheel_mass*(3*wheel_radius**2 + wheel_width**2)/12}"
+               iyy="${wheel_mass*(3*wheel_radius**2 + wheel_width**2)/12}"
+               izz="${wheel_mass*wheel_radius**2/2}"
+               ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <origin xyz="${wheel_xoff} ${-(base_width/2 + wheel_ygap)} ${-wheel_zoff}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- ==================== 传感器安装 ==================== -->
+
+  <!-- 激光雷达 (顶部中央) -->
+  <xacro:rplidar_a2
+    prefix="robot_"
+    parent_link="base_link"
+    xyz="0 0 ${base_height + 0.025}"
+    rpy="0 0 0"/>
+
+  <!-- 深度相机 (前部) -->
+  <xacro:realsense_d435i
+    prefix="robot_"
+    parent_link="base_link"
+    xyz="0.25 0 ${base_height/2}"
+    rpy="0 0 0"/>
+
+  <!-- IMU (底盘中央) -->
+  <xacro:bmi055_imu
+    prefix="robot_"
+    parent_link="base_link"
+    xyz="0 0 ${base_height/2}"
+    rpy="0 0 0"/>
+
+  <!-- ==================== Gazebo 插件 ==================== -->
+
+  <!-- 差速驱动插件 -->
+  <gazebo>
+    <plugin name="gazebo_ros_diff_drive" filename="libgazebo_ros_diff_drive.so">
+      <ros>
+        <namespace>/robot</namespace>
+      </ros>
+      <update_rate>50</update_rate>
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>${base_width + 2*wheel_ygap}</wheel_separation>
+      <wheel_diameter>${2*wheel_radius}</wheel_diameter>
+      <max_wheel_torque>20</max_wheel_torque>
+      <max_wheel_acceleration>1.0</max_wheel_acceleration>
+      <command_topic>cmd_vel</command_topic>
+      <publish_wheel_tf>true</publish_wheel_tf>
+      <publish_tf>true</publish_tf>
+      <odometry_topic>odom</odometry_topic>
+      <odometry_frame>odom</odometry_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+    </plugin>
+  </gazebo>
+
+  <!-- ROS2 Control 插件 (可选) -->
+  <gazebo>
+    <plugin name="gazebo_ros2_control/GazeboSystem" filename="libgazebo_ros2_control_system.so">
+      <parameters>$(find deep_pit_simulation)/config/robot_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>
